@@ -1,9 +1,10 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { deleteOnCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
+// import { v2 as cloudinary } from "cloudinary";
 // import cookie from "cookie-parser";
 
 const generateAccessandRefreshTokens = async(userId)=>{
@@ -253,7 +254,7 @@ const updateAccountDetails = asyncHandler(async(req,res)=>{
   if(!(fullName || email)){
     throw new ApiError(400,"All feilds are required")
   }
-  const user = User.findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set:{
@@ -278,10 +279,20 @@ const updateUserAvatar = asyncHandler(async(req,res)=>{
   const avatar = await uploadOnCloudinary(avatarLocalPath)
 
   if(!avatar.url){
-    throw new ApiError(400,"Error while uplading avatar")
+    throw new ApiError(400,"Error while uploading avatar")
   }
+  // added code to remove the previos url
+  const user = await User.findById(req.user?._id);
+  const currentAvatarUrl = user.avatar;
 
-  const user = await User.findByIdAndUpdate(
+  // Extract the public ID of the current avatar from its URL
+  const currentAvatarPublicId = currentAvatarUrl.split('/').pop().split('.')[0];
+
+  // Delete the current avatar from Cloudinary
+  if (currentAvatarPublicId) {
+    await deleteOnCloudinary(currentAvatarPublicId)
+  }
+  const updatedUser = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set:{
@@ -289,11 +300,11 @@ const updateUserAvatar = asyncHandler(async(req,res)=>{
       }
     },
     {new:true}
-  ).select("-password")
+  ).select("-password -refreshToken")
 
   return res
   .status(200)
-  .json(new ApiResponse(200,user,"Avatar updated successfully"))
+  .json(new ApiResponse(200,updatedUser,"Avatar updated successfully"))
 })
 const updateUserCoverImage = asyncHandler(async(req,res)=>{
   const coverImageLocalPath =  req.file?.path

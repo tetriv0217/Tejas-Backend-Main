@@ -4,7 +4,7 @@ import { User } from "../models/user.model.js";
 import { deleteOnCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
-import { Subscription } from "../models/subscription.model.js";
+// import { Subscription } from "../models/subscription.model.js";
 // import { v2 as cloudinary } from "cloudinary";
 // import cookie from "cookie-parser";
 
@@ -400,6 +400,9 @@ const getChannelProfile = asyncHandler(async(req,res)=>{
   )
 })
 
+const getWatchHistory = asyncHandler(async(req,res)=>{
+  const user = req?.user_id
+})
 
 export { 
   registerUser,
